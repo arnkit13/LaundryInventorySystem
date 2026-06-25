@@ -1,0 +1,9 @@
+.env
+.env.local
+frontend/.env
+backend/.env
+target/
+node_modules/
+dist/
+dist-ssr/
+*.local
