@@ -15,6 +15,8 @@ import Inventory from './pages/Inventory';
 import Reports from './pages/Reports';
 import UserManagement from './pages/UserManagement';
 import Branches from './pages/Branches';
+import Services from './pages/Services';
+import Expenses from './pages/Expenses';
 
 function App() {
   return (
@@ -41,8 +43,17 @@ function App() {
               {/* Shared pages */}
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="transactions" element={<Transactions />} />
+              <Route path="services" element={<Services />} />
 
               {/* Admin only pages */}
+              <Route
+                path="expenses"
+                element={
+                  <ProtectedRoute allowedRoles={['ROLE_ADMIN']}>
+                    <Expenses />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="inventory"
                 element={

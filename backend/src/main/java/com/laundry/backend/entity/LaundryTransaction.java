@@ -3,6 +3,8 @@ package com.laundry.backend.entity;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "laundry_transactions")
@@ -42,6 +44,18 @@ public class LaundryTransaction {
     @JoinColumn(name = "branch_id")
     private Branch branch; // branch where transaction occurred
 
+    @Column(length = 20)
+    private String paymentMethod; // GCash or Cash
+
+    @Column(length = 50)
+    private String referenceNumber; // GCash last 4 digits reference
+
+    @Column
+    private Double totalAmount; // total price calculated for transaction
+
+    @OneToMany(mappedBy = "transaction", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TransactionServiceItem> serviceItems = new ArrayList<>();
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -53,7 +67,8 @@ public class LaundryTransaction {
     public LaundryTransaction() {}
 
     public LaundryTransaction(Long id, LocalDate date, String customerName, Double weightKg, SoapProduct soapProduct,
-                              Double soapUsedQty, Double soapRemainingQty, User user, String machineNumber, Branch branch, LocalDateTime createdAt) {
+                              Double soapUsedQty, Double soapRemainingQty, User user, String machineNumber, Branch branch,
+                              String paymentMethod, String referenceNumber, Double totalAmount, List<TransactionServiceItem> serviceItems, LocalDateTime createdAt) {
         this.id = id;
         this.date = date;
         this.customerName = customerName;
@@ -64,6 +79,12 @@ public class LaundryTransaction {
         this.user = user;
         this.machineNumber = machineNumber;
         this.branch = branch;
+        this.paymentMethod = paymentMethod;
+        this.referenceNumber = referenceNumber;
+        this.totalAmount = totalAmount;
+        if (serviceItems != null) {
+            this.serviceItems = serviceItems;
+        }
         this.createdAt = createdAt;
     }
 
@@ -98,6 +119,18 @@ public class LaundryTransaction {
     public Branch getBranch() { return branch; }
     public void setBranch(Branch branch) { this.branch = branch; }
 
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+
+    public String getReferenceNumber() { return referenceNumber; }
+    public void setReferenceNumber(String referenceNumber) { this.referenceNumber = referenceNumber; }
+
+    public Double getTotalAmount() { return totalAmount; }
+    public void setTotalAmount(Double totalAmount) { this.totalAmount = totalAmount; }
+
+    public List<TransactionServiceItem> getServiceItems() { return serviceItems; }
+    public void setServiceItems(List<TransactionServiceItem> serviceItems) { this.serviceItems = serviceItems; }
+
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
@@ -117,6 +150,10 @@ public class LaundryTransaction {
         private User user;
         private String machineNumber;
         private Branch branch;
+        private String paymentMethod;
+        private String referenceNumber;
+        private Double totalAmount;
+        private List<TransactionServiceItem> serviceItems = new ArrayList<>();
         private LocalDateTime createdAt;
 
         public LaundryTransactionBuilder id(Long id) { this.id = id; return this; }
@@ -129,10 +166,14 @@ public class LaundryTransaction {
         public LaundryTransactionBuilder user(User user) { this.user = user; return this; }
         public LaundryTransactionBuilder machineNumber(String machineNumber) { this.machineNumber = machineNumber; return this; }
         public LaundryTransactionBuilder branch(Branch branch) { this.branch = branch; return this; }
+        public LaundryTransactionBuilder paymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; return this; }
+        public LaundryTransactionBuilder referenceNumber(String referenceNumber) { this.referenceNumber = referenceNumber; return this; }
+        public LaundryTransactionBuilder totalAmount(Double totalAmount) { this.totalAmount = totalAmount; return this; }
+        public LaundryTransactionBuilder serviceItems(List<TransactionServiceItem> serviceItems) { this.serviceItems = serviceItems; return this; }
         public LaundryTransactionBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
 
         public LaundryTransaction build() {
-            return new LaundryTransaction(id, date, customerName, weightKg, soapProduct, soapUsedQty, soapRemainingQty, user, machineNumber, branch, createdAt);
+            return new LaundryTransaction(id, date, customerName, weightKg, soapProduct, soapUsedQty, soapRemainingQty, user, machineNumber, branch, paymentMethod, referenceNumber, totalAmount, serviceItems, createdAt);
         }
     }
 }

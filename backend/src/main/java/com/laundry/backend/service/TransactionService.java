@@ -1,14 +1,19 @@
 package com.laundry.backend.service;
 
 import com.laundry.backend.dto.TransactionRequest;
+import com.laundry.backend.dto.ServiceItemRequest;
 import com.laundry.backend.entity.LaundryTransaction;
 import com.laundry.backend.entity.SoapProduct;
 import com.laundry.backend.entity.User;
+import com.laundry.backend.entity.LaundryService;
+import com.laundry.backend.entity.TransactionServiceItem;
 import com.laundry.backend.repository.TransactionRepository;
+import com.laundry.backend.repository.LaundryServiceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -16,6 +21,9 @@ public class TransactionService {
 
     @Autowired
     private TransactionRepository transactionRepository;
+
+    @Autowired
+    private LaundryServiceRepository laundryServiceRepository;
 
     @Autowired
     private InventoryService inventoryService;
@@ -51,7 +59,7 @@ public class TransactionService {
                 performer
         );
 
-        // Build and save laundry transaction
+        // Build transaction (transient, so we can link items and calculate total amount)
         LaundryTransaction transaction = LaundryTransaction.builder()
                 .date(request.getDate())
                 .customerName(request.getCustomerName())
@@ -62,7 +70,38 @@ public class TransactionService {
                 .user(performer)
                 .machineNumber(request.getMachineNumber())
                 .branch(performer.getBranch())
+                .paymentMethod(request.getPaymentMethod())
+                .referenceNumber(request.getReferenceNumber())
                 .build();
+
+        double totalAmount = 0.0;
+        List<TransactionServiceItem> serviceItems = new ArrayList<>();
+
+        if (request.getServices() != null) {
+            for (ServiceItemRequest serviceReq : request.getServices()) {
+                LaundryService service = laundryServiceRepository.findById(serviceReq.getServiceId())
+                        .orElseThrow(() -> new RuntimeException("Service not found with ID: " + serviceReq.getServiceId()));
+
+                double unitPrice = (serviceReq.getPriceAtTransaction() != null) 
+                        ? serviceReq.getPriceAtTransaction() 
+                        : service.getRate();
+
+                double cost = unitPrice * serviceReq.getQuantity();
+                totalAmount += cost;
+
+                TransactionServiceItem item = TransactionServiceItem.builder()
+                        .transaction(transaction)
+                        .laundryService(service)
+                        .quantity(serviceReq.getQuantity())
+                        .priceAtTransaction(unitPrice)
+                        .build();
+
+                serviceItems.add(item);
+            }
+        }
+
+        transaction.setTotalAmount(totalAmount);
+        transaction.setServiceItems(serviceItems);
 
         return transactionRepository.save(transaction);
     }

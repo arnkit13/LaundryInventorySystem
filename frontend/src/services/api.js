@@ -22,6 +22,21 @@ const SEED_TRANSACTIONS = [];
 
 const SEED_HISTORY = [];
 
+const SEED_SERVICES = [
+  { id: 1, name: 'Basic Service', rate: 180.0, unit: 'service' },
+  { id: 2, name: 'Comforter', rate: 180.0, unit: 'pc' },
+  { id: 3, name: 'Extra Wash', rate: 20.0, unit: 'wash' },
+  { id: 4, name: 'Extra Rinse', rate: 20.0, unit: 'rinse' },
+  { id: 5, name: 'Extra Dry', rate: 30.0, unit: 'dry' },
+  { id: 6, name: 'Extra Kilo', rate: 20.0, unit: 'kilo' },
+  { id: 7, name: 'Detergent', rate: 10.0, unit: 'sachet' },
+  { id: 8, name: 'SELF SERVICE', rate: 100.0, unit: 'LOAD' },
+  { id: 9, name: 'FREE', rate: 0.0, unit: 'LOAD' },
+  { id: 10, name: 'BEDSHEETS', rate: 180.0, unit: '' },
+  { id: 11, name: 'SOFTENER', rate: 10.0, unit: '' },
+  { id: 12, name: 'ICE', rate: 15.0, unit: 'PACK' }
+];
+
 // Helper to access localStorage securely
 const getMockData = (key, defaultData) => {
   const data = localStorage.getItem(key);
@@ -75,6 +90,21 @@ const handleMockRequest = async (method, url, data) => {
   const products = getMockData('mock_products', SEED_PRODUCTS);
   const transactions = getMockData('mock_transactions', SEED_TRANSACTIONS);
   const history = getMockData('mock_inventory_history', SEED_HISTORY);
+  let services = getMockData('mock_services', SEED_SERVICES);
+  let servicesUpdated = false;
+  
+  // Seed only if a default service is completely missing by name
+  SEED_SERVICES.forEach((seed) => {
+    const existing = services.find(s => s.name.toLowerCase() === seed.name.toLowerCase());
+    if (!existing) {
+      services.push({ ...seed, id: services.length > 0 ? Math.max(...services.map(s => s.id)) + 1 : seed.id });
+      servicesUpdated = true;
+    }
+  });
+
+  if (servicesUpdated) {
+    saveMockData('mock_services', services);
+  }
 
   // 0. BRANCHES
   if (path === '/api/branches') {
@@ -116,6 +146,65 @@ const handleMockRequest = async (method, url, data) => {
     branches.splice(branchIndex, 1);
     saveMockData('mock_branches', branches);
     return resolve({ message: 'Branch deleted successfully.' });
+  }
+
+  // SERVICES ENDPOINTS
+  if (path === '/api/services') {
+    if (method === 'get') {
+      return resolve(services);
+    }
+    if (method === 'post') {
+      const { name, rate, unit } = data || {};
+      if (!name || rate === undefined || !unit) {
+        return reject('Name, Rate, and Unit are required.');
+      }
+      if (services.some(s => s.name.toLowerCase() === name.toLowerCase())) {
+        return reject('Service name already exists.');
+      }
+      const newService = {
+        id: services.length > 0 ? Math.max(...services.map(s => s.id)) + 1 : 1,
+        name,
+        rate: Number(rate),
+        unit
+      };
+      services.push(newService);
+      saveMockData('mock_services', services);
+      return resolve(newService);
+    }
+  }
+
+  const serviceIdMatch = path.match(/^\/api\/services\/(\d+)$/);
+  if (serviceIdMatch) {
+    const serviceId = parseInt(serviceIdMatch[1], 10);
+    const serviceIndex = services.findIndex(s => s.id === serviceId);
+    
+    if (serviceIndex === -1) {
+      return reject('Service not found.', 404);
+    }
+    
+    if (method === 'put') {
+      const { name, rate, unit } = data || {};
+      if (!name || rate === undefined || !unit) {
+        return reject('Name, Rate, and Unit are required.');
+      }
+      if (services.some((s, idx) => idx !== serviceIndex && s.name.toLowerCase() === name.toLowerCase())) {
+        return reject('Service name already exists.');
+      }
+      services[serviceIndex] = {
+        ...services[serviceIndex],
+        name,
+        rate: Number(rate),
+        unit
+      };
+      saveMockData('mock_services', services);
+      return resolve(services[serviceIndex]);
+    }
+    
+    if (method === 'delete') {
+      services.splice(serviceIndex, 1);
+      saveMockData('mock_services', services);
+      return resolve({ message: 'Service deleted successfully.' });
+    }
   }
 
   // 1. LOGIN
@@ -290,7 +379,7 @@ const handleMockRequest = async (method, url, data) => {
       }
     }
     if (method === 'post') {
-      const { date, customerName, weightKg, soapProductId, soapUsedQty, machineNumber } = data || {};
+      const { date, customerName, weightKg, soapProductId, soapUsedQty, machineNumber, paymentMethod, referenceNumber, services: selectedServices } = data || {};
       const prodId = parseInt(soapProductId, 10);
       const prodIndex = products.findIndex(p => p.id === prodId);
       if (prodIndex === -1) {
@@ -313,6 +402,24 @@ const handleMockRequest = async (method, url, data) => {
       // Find full performer user in DB to copy their branch
       const dbPerformer = users.find(u => u.id === currentUser?.id);
 
+      let totalAmount = 0;
+      const serviceItems = [];
+      if (selectedServices && Array.isArray(selectedServices)) {
+        selectedServices.forEach(item => {
+          const s = services.find(srv => srv.id === Number(item.serviceId));
+          if (s) {
+            const unitPrice = item.priceAtTransaction != null ? Number(item.priceAtTransaction) : s.rate;
+            totalAmount += unitPrice * item.quantity;
+            serviceItems.push({
+              id: Math.random(),
+              laundryService: { id: s.id, name: s.name, rate: s.rate, unit: s.unit },
+              quantity: item.quantity,
+              priceAtTransaction: unitPrice
+            });
+          }
+        });
+      }
+
       const newTx = {
         id: transactions.length > 0 ? Math.max(...transactions.map(t => t.id)) + 1 : 1,
         date: date || new Date().toISOString().split('T')[0],
@@ -325,7 +432,11 @@ const handleMockRequest = async (method, url, data) => {
         machineNumber: machineNumber || 'Machine 1',
         branchId: dbPerformer?.branchId || null,
         branch: dbPerformer?.branch || null,
-        user: currentUser ? { id: currentUser.id, fullName: currentUser.fullName } : { id: 2, fullName: 'System User' }
+        user: currentUser ? { id: currentUser.id, fullName: currentUser.fullName } : { id: 2, fullName: 'System User' },
+        paymentMethod: paymentMethod || 'Cash',
+        referenceNumber: paymentMethod === 'Gcash' ? referenceNumber : null,
+        totalAmount,
+        serviceItems
       };
       transactions.unshift(newTx);
       saveMockData('mock_transactions', transactions);
@@ -421,6 +532,53 @@ const handleMockRequest = async (method, url, data) => {
     user.active = !user.active;
     saveMockData('mock_users', users);
     return resolve(user);
+  }
+
+  // 9.5 SERVICES (GET & POST)
+  if (path === '/api/services') {
+    if (method === 'get') {
+      return resolve(services);
+    }
+    if (method === 'post') {
+      const { name, rate, unit } = data || {};
+      if (!name || rate === undefined) {
+        return reject('Name and Rate are required.');
+      }
+      const newService = {
+        id: services.length > 0 ? Math.max(...services.map(s => s.id)) + 1 : 1,
+        name,
+        rate: Number(rate),
+        unit: unit || ''
+      };
+      services.push(newService);
+      saveMockData('mock_services', services);
+      return resolve(newService);
+    }
+  }
+
+  // 9.6 SERVICES MODIFY & DELETE (PUT & DELETE /api/services/:id)
+  const serviceMatch = path.match(/^\/api\/services\/(\d+)$/);
+  if (serviceMatch) {
+    const serviceId = parseInt(serviceMatch[1], 10);
+    const serviceIndex = services.findIndex(s => s.id === serviceId);
+    if (serviceIndex === -1) {
+      return reject('Service not found.', 404);
+    }
+
+    if (method === 'put') {
+      const { name, rate, unit } = data || {};
+      const service = services[serviceIndex];
+      if (name) service.name = name;
+      if (rate !== undefined) service.rate = Number(rate);
+      if (unit !== undefined) service.unit = unit;
+      saveMockData('mock_services', services);
+      return resolve(service);
+    }
+    if (method === 'delete') {
+      services.splice(serviceIndex, 1);
+      saveMockData('mock_services', services);
+      return resolve({ message: 'Service deleted successfully.' });
+    }
   }
 
   // 10. REPORTS

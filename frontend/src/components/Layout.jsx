@@ -30,12 +30,16 @@ import {
   AccountCircle,
   ExitToApp as LogoutIcon,
   Store as BranchIcon,
+  Receipt as ServiceIcon,
+  ArrowBack as ArrowBackIcon,
+  AccountBalanceWallet as ExpenseIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 260;
 
 const Layout = () => {
   const { user, logout, isAdmin } = useAuth();
+  const currentDrawerWidth = isAdmin() ? drawerWidth : 0;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -63,7 +67,9 @@ const Layout = () => {
 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', roles: ['ROLE_ADMIN', 'ROLE_USER'] },
-    { text: 'Transactions', icon: <LaundryIcon />, path: '/transactions', roles: ['ROLE_ADMIN', 'ROLE_USER'] },
+    { text: 'Transactions', icon: <LaundryIcon />, path: '/transactions', roles: ['ROLE_ADMIN'] },
+    { text: 'Services & Rates', icon: <ServiceIcon />, path: '/services', roles: ['ROLE_ADMIN'] },
+    { text: 'Expenses Ledger', icon: <ExpenseIcon />, path: '/expenses', roles: ['ROLE_ADMIN'] },
     { text: 'Branches', icon: <BranchIcon />, path: '/branches', roles: ['ROLE_ADMIN'] },
     { text: 'Soap Inventory', icon: <InventoryIcon />, path: '/inventory', roles: ['ROLE_ADMIN'] },
     { text: 'Reports & Analytics', icon: <ReportIcon />, path: '/reports', roles: ['ROLE_ADMIN'] },
@@ -127,8 +133,8 @@ const Layout = () => {
       <AppBar
         position="fixed"
         sx={{
-          width: { md: `calc(100% - ${drawerWidth}px)` },
-          ml: { md: `${drawerWidth}px` },
+          width: { md: `calc(100% - ${currentDrawerWidth}px)` },
+          ml: { md: `${currentDrawerWidth}px` },
           boxShadow: 'none',
           borderBottom: '1px solid',
           borderColor: 'divider',
@@ -142,10 +148,21 @@ const Layout = () => {
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { md: 'none' } }}
+            sx={{ mr: 2, display: isAdmin() ? { md: 'none' } : 'none' }}
           >
             <MenuIcon />
           </IconButton>
+          {!isAdmin() && location.pathname !== '/dashboard' && (
+            <IconButton
+              color="inherit"
+              aria-label="back to dashboard"
+              edge="start"
+              onClick={() => navigate('/dashboard')}
+              sx={{ mr: 2 }}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+          )}
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
             {location.pathname === '/dashboard' ? 'Overview Dashboard' :
              location.pathname === '/transactions' ? 'Laundry Logs' :
@@ -202,44 +219,46 @@ const Layout = () => {
           </Box>
         </Toolbar>
       </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
-        aria-label="mailbox folders"
-      >
-        {/* Mobile Drawer */}
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true, // Better open performance on mobile.
-          }}
-          sx={{
-            display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
+      {isAdmin() && (
+        <Box
+          component="nav"
+          sx={{ width: { md: currentDrawerWidth }, flexShrink: { md: 0 } }}
+          aria-label="mailbox folders"
         >
-          {drawerContent}
-        </Drawer>
-        {/* Desktop Drawer */}
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-          open
-        >
-          {drawerContent}
-        </Drawer>
-      </Box>
+          {/* Mobile Drawer */}
+          <Drawer
+            variant="temporary"
+            open={mobileOpen}
+            onClose={handleDrawerToggle}
+            ModalProps={{
+              keepMounted: true, // Better open performance on mobile.
+            }}
+            sx={{
+              display: { xs: 'block', md: 'none' },
+              '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            }}
+          >
+            {drawerContent}
+          </Drawer>
+          {/* Desktop Drawer */}
+          <Drawer
+            variant="permanent"
+            sx={{
+              display: { xs: 'none', md: 'block' },
+              '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            }}
+            open
+          >
+            {drawerContent}
+          </Drawer>
+        </Box>
+      )}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { md: `calc(100% - ${drawerWidth}px)` },
+          width: { md: `calc(100% - ${currentDrawerWidth}px)` },
           mt: 8,
           minHeight: 'calc(100vh - 64px)',
         }}

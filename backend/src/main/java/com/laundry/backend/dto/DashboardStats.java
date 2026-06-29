@@ -7,14 +7,24 @@ public class DashboardStats {
     private double totalKgWashedToday;
     private long totalCustomersToday;
     private List<SoapStockStatus> soapStocks;
+    
+    private double totalRevenue;
+    private double totalExpenses;
+    private double netProfit;
+    private List<MonthlyFinancialPoint> monthlyFinancials;
 
     public DashboardStats() {}
 
-    public DashboardStats(long totalTransactionsToday, double totalKgWashedToday, long totalCustomersToday, List<SoapStockStatus> soapStocks) {
+    public DashboardStats(long totalTransactionsToday, double totalKgWashedToday, long totalCustomersToday, List<SoapStockStatus> soapStocks,
+                          double totalRevenue, double totalExpenses, double netProfit, List<MonthlyFinancialPoint> monthlyFinancials) {
         this.totalTransactionsToday = totalTransactionsToday;
         this.totalKgWashedToday = totalKgWashedToday;
         this.totalCustomersToday = totalCustomersToday;
         this.soapStocks = soapStocks;
+        this.totalRevenue = totalRevenue;
+        this.totalExpenses = totalExpenses;
+        this.netProfit = netProfit;
+        this.monthlyFinancials = monthlyFinancials;
     }
 
     public long getTotalTransactionsToday() { return totalTransactionsToday; }
@@ -28,6 +38,41 @@ public class DashboardStats {
 
     public List<SoapStockStatus> getSoapStocks() { return soapStocks; }
     public void setSoapStocks(List<SoapStockStatus> soapStocks) { this.soapStocks = soapStocks; }
+
+    public double getTotalRevenue() { return totalRevenue; }
+    public void setTotalRevenue(double totalRevenue) { this.totalRevenue = totalRevenue; }
+
+    public double getTotalExpenses() { return totalExpenses; }
+    public void setTotalExpenses(double totalExpenses) { this.totalExpenses = totalExpenses; }
+
+    public double getNetProfit() { return netProfit; }
+    public void setNetProfit(double netProfit) { this.netProfit = netProfit; }
+
+    public List<MonthlyFinancialPoint> getMonthlyFinancials() { return monthlyFinancials; }
+    public void setMonthlyFinancials(List<MonthlyFinancialPoint> monthlyFinancials) { this.monthlyFinancials = monthlyFinancials; }
+
+    public static class MonthlyFinancialPoint {
+        private String month;
+        private Double revenue;
+        private Double expenses;
+
+        public MonthlyFinancialPoint() {}
+
+        public MonthlyFinancialPoint(String month, Double revenue, Double expenses) {
+            this.month = month;
+            this.revenue = revenue;
+            this.expenses = expenses;
+        }
+
+        public String getMonth() { return month; }
+        public void setMonth(String month) { this.month = month; }
+
+        public Double getRevenue() { return revenue; }
+        public void setRevenue(Double revenue) { this.revenue = revenue; }
+
+        public Double getExpenses() { return expenses; }
+        public void setExpenses(Double expenses) { this.expenses = expenses; }
+    }
 
     public static class SoapStockStatus {
         private Long id;

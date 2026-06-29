@@ -1,9 +1,11 @@
 package com.laundry.backend.dto;
 
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TransactionRequest {
     @NotNull(message = "Date is required")
@@ -25,15 +27,25 @@ public class TransactionRequest {
     @NotBlank(message = "Machine identifier is required")
     private String machineNumber;
 
+    @NotBlank(message = "Mode of payment is required")
+    private String paymentMethod; // GCash or Cash
+
+    private String referenceNumber; // Optional (Required only for GCash on client check)
+
+    private List<ServiceItemRequest> services = new ArrayList<>();
+
     public TransactionRequest() {}
 
-    public TransactionRequest(LocalDate date, String customerName, Double weightKg, Long soapProductId, Double soapUsedQty, String machineNumber) {
+    public TransactionRequest(LocalDate date, String customerName, Double weightKg, Long soapProductId, Double soapUsedQty, String machineNumber, String paymentMethod, String referenceNumber, List<ServiceItemRequest> services) {
         this.date = date;
         this.customerName = customerName;
         this.weightKg = weightKg;
         this.soapProductId = soapProductId;
         this.soapUsedQty = soapUsedQty;
         this.machineNumber = machineNumber;
+        this.paymentMethod = paymentMethod;
+        this.referenceNumber = referenceNumber;
+        this.services = services != null ? services : new ArrayList<>();
     }
 
     public LocalDate getDate() { return date; }
@@ -53,4 +65,13 @@ public class TransactionRequest {
 
     public String getMachineNumber() { return machineNumber; }
     public void setMachineNumber(String machineNumber) { this.machineNumber = machineNumber; }
+
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+
+    public String getReferenceNumber() { return referenceNumber; }
+    public void setReferenceNumber(String referenceNumber) { this.referenceNumber = referenceNumber; }
+
+    public List<ServiceItemRequest> getServices() { return services; }
+    public void setServices(List<ServiceItemRequest> services) { this.services = services; }
 }

@@ -1,0 +1,2 @@
+Please place your GCash QR code image here and rename it to 'qrcode.jpeg'.
+The application will read this image and display it to users when they choose 'GCash' as the mode of payment.
